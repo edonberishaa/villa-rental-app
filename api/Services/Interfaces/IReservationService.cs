@@ -6,5 +6,8 @@ namespace api.Services.Interfaces
     {
         Task<ReservationDTO> CreateReservationAsync(ReservationRequestDTO request);
         Task<bool> IsVillaAvailableAsync(int villaId, DateTime startDate, DateTime endDate);
+        Task<bool> ConfirmReservationAsync(int reservationId);
+        Task<List<ReservationDTO>> GetAllReservationsAsync();
+        Task<ReservationDTO> GetReservationByIdAsync(int id);
     }
 }

@@ -1,19 +1,52 @@
 ﻿using api.Data;
 using api.DTOs;
 using api.Models;
+using api.Services.Interfaces;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Services
 {
-    public class ReservationService
+    public class ReservationService : IReservationService
     {
         private readonly AppDbContext _context;
+        private readonly IMapper _mapper;
 
-        public ReservationService(AppDbContext context)
+        public ReservationService(AppDbContext context,IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
+        public async Task<List<ReservationDTO>> GetAllReservationsAsync()
+        {
+            var reservations = await _context.Reservations
+                .Include(r => r.Villa)
+                .ToListAsync();
+            return _mapper.Map<List<ReservationDTO>>(reservations);
+        }
+        public async Task<ReservationDTO?> GetReservationByIdAsync(int id)
+        {
+            var reservation = await _context.Reservations
+                .Include(r => r.Villa)
+                .FirstOrDefaultAsync(r => r.Id == id);
 
+            return reservation == null ? null : _mapper.Map<ReservationDTO>(reservation);
+        } 
+
+        public async Task<bool> ConfirmReservationAsync(int reservationId)
+        {
+            var reservation = await _context.Reservations.FindAsync(reservationId);
+            if(reservation == null || reservation.Status == ReservationStatus.Confirmed)
+            {
+                return false;
+            }
+
+            reservation.Status = ReservationStatus.Confirmed;
+            await _context.SaveChangesAsync();
+
+            return true;
+
+        }
         public async Task<bool> IsVillaAvailableAsync(int villaId, DateTime start, DateTime end)
         {
             if (start > end)

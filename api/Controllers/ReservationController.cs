@@ -1,5 +1,7 @@
 ﻿using api.DTOs;
 using api.Services;
+using api.Services.Interfaces;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
@@ -8,11 +10,13 @@ namespace api.Controllers
     [ApiController]
     public class ReservationController : ControllerBase
     {
-        private readonly ReservationService _service;
+        private readonly IReservationService _service;
+        private readonly IMapper _mapper;
 
-        public ReservationController(ReservationService service)
+        public ReservationController(IReservationService service,IMapper mapper)
         {
             _service = service;
+            _mapper = mapper;
         }
 
         [HttpPost]
@@ -46,6 +50,29 @@ namespace api.Controllers
                 return BadRequest(new { message = "Villa is not available for the selected dates." });
 
             return Ok(new { message = "Villa is available." });
+        }
+        [HttpGet]
+        public async Task<IActionResult> GetAllReservations()
+        {
+            var reservations = await _service.GetAllReservationsAsync();
+            return Ok(reservations);
+        }
+        [HttpGet("id")]
+        public async Task<IActionResult> GetReservationById(int id)
+        {
+            var reservation = await _service.GetReservationByIdAsync(id);
+            if (reservation == null) return NotFound(new { message = "Reservation not found." });
+
+            return Ok(reservation);
+        }
+        [HttpPut("{id}/confirm")]
+        public async Task<IActionResult> ConfirmReservation(int id)
+        {
+            var success = await _service.ConfirmReservationAsync(id);
+            if (!success)
+                return NotFound(new { message = "Reservation not found or already confirmed." });
+
+            return Ok(new {message = "Reservation confirmed."});
         }
     }
 }

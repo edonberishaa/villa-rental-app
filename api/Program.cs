@@ -1,7 +1,10 @@
 using api.Data;
+using api.Mappings;
 using api.Services;
 using api.Services.Interfaces;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +16,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
 builder.Services.AddScoped<IReservationService, ReservationService>();
-
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<MappingProfile>();
+});// Replace this block:
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
