@@ -4,6 +4,13 @@ using api.Services;
 using api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Stripe;
+using api.Models;
+using TokenServiceImpl = api.Services.TokenService;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,8 +33,35 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddIdentityApiEndpoints<AppUser>()
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<AppDbContext>();
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+});
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddControllers();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ITokenService, TokenServiceImpl>();
 builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<MappingProfile>();
@@ -57,17 +91,56 @@ var app = builder.Build();
 
 app.UseCors(myAllowSpecificOrigins);
 
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"]; // ensure initialized
+app.UseAuthentication();
+app.UseAuthorization();
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    // Seed roles and admin user
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+
+    string[] roles = new[] { "Admin", "Customer" };
+    foreach (var role in roles)
+    {
+        var exists = roleManager.RoleExistsAsync(role).GetAwaiter().GetResult();
+        if (!exists)
+        {
+            roleManager.CreateAsync(new IdentityRole(role)).GetAwaiter().GetResult();
+        }
+    }
+
+    var adminEmail = builder.Configuration["Admin:Email"] ?? "edonberisha52@gmail.com";
+    var adminPassword = builder.Configuration["Admin:Password"] ?? "Edon1234!";
+    var admin = userManager.FindByEmailAsync(adminEmail).GetAwaiter().GetResult();
+    if (admin == null)
+    {
+        admin = new AppUser { UserName = adminEmail, Email = adminEmail, EmailConfirmed = true, FullName = "Administrator" };
+        var createResult = userManager.CreateAsync(admin, adminPassword).GetAwaiter().GetResult();
+        if (createResult.Succeeded)
+        {
+            userManager.AddToRoleAsync(admin, "Admin").GetAwaiter().GetResult();
+        }
+    }
+    else
+    {
+        var isAdmin = userManager.IsInRoleAsync(admin, "Admin").GetAwaiter().GetResult();
+        if (!isAdmin)
+        {
+            userManager.AddToRoleAsync(admin, "Admin").GetAwaiter().GetResult();
+        }
+    }
 
     if (!db.Villas.Any())
     {
         db.Villas.Add(new Villa
         {
             Name = "Villa Rugova Escape",
-            Region = "Rugovë",
+            Region = "Rugova",
             Description = "Cozy mountain villa with fireplace.",
             PricePerNight = 120.00m,
             ImageUrlsJson = "[\"/images/villa1.jpg\",\"/images/villa2.jpg\"]"
@@ -79,7 +152,7 @@ using (var scope = app.Services.CreateScope())
             Region = "Brezovica",
             Description = "Perfect for winter getaways.",
             PricePerNight = 150.00m,
-            ImageUrlsJson = "[\"/images/chalet1.jpg\"]"
+            ImageUrlsJson = "[\"/images/villa3.jpg\"]"
         });
         db.SaveChanges();
     }

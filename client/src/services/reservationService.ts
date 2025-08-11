@@ -1,14 +1,19 @@
-import axios from "axios";
 import type { Reservation } from "../types/Reservation";
 import type { ReservationResponseDTO } from "../types/Reservation";
+import api from "./api";
 
-const API_URL = "https://localhost:7021/api/reservation";
+const BASE = "/reservation";
 
 export const getReservations = async (): Promise<Reservation[]> => {
-    const response = await axios.get<Reservation[]>(API_URL);
+    const response = await api.get<Reservation[]>(BASE);
     return response.data;
 }
 
-export const createReservation = async (reservation: Reservation): Promise<ReservationResponseDTO> => {
-  const response = await axios.post(API_URL, reservation);
-  return response.data};
+export interface CreateReservationResponse extends ReservationResponseDTO {
+  clientSecret?: string;
+}
+
+export const createReservation = async (reservation: Reservation): Promise<CreateReservationResponse> => {
+  const response = await api.post(BASE, reservation);
+  return response.data
+};

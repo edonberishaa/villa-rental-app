@@ -4,6 +4,9 @@ import type { Villa } from "../types/Villa";
 import { createReservation } from "../services/reservationService";
 import { differenceInCalendarDays } from "date-fns";
 import { useNavigate, useParams } from "react-router-dom";
+import {loadStripe} from '@stripe/stripe-js';
+import {Elements, PaymentElement, useElements, useStripe} from '@stripe/react-stripe-js';
+import { fetchPublishableKey } from "../services/api";
 
 interface ReservationPayload {
   villaId: number;
@@ -14,6 +17,47 @@ interface ReservationPayload {
   startDate: string;
   endDate: string;
 }
+
+let stripePromise: Promise<any> | null = null;
+async function getStripe() {
+  if (!stripePromise) {
+    const key = await fetchPublishableKey();
+    stripePromise = loadStripe(key);
+  }
+  return stripePromise;
+}
+
+const CheckoutForm: React.FC<{ onSuccess: (data: any)=>void }>= ({onSuccess}) =>{
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const handlePay = async (e: React.FormEvent) =>{
+    e.preventDefault();
+    if(!stripe || !elements) return;
+    setLoading(true);
+    const {error} = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/thankyou`,
+      },
+      redirect: 'if_required'
+    });
+    setLoading(false);
+    if(error){
+      alert(error.message);
+    } else {
+      onSuccess({});
+    }
+  };
+  return (
+    <form onSubmit={handlePay} className="space-y-4">
+      <PaymentElement />
+      <button disabled={loading || !stripe || !elements} className="bg-accent-600 text-white px-4 py-2 rounded">
+        {loading ? 'Processing...' : 'Pay now'}
+      </button>
+    </form>
+  );
+};
 
 const ReservationPage: React.FC = () => {
   const { villaId } = useParams<{ villaId: string }>();
@@ -109,22 +153,26 @@ const ReservationPage: React.FC = () => {
 
     try {
       const res = await createReservation(payload);
-      navigate("/thankyou", {
-        state: {
-          reservationCode: res.reservationCode,
-          feeAmount: res.feeAmount,
-          totalNights,
-          guestName: form.guestName,
-          villaName: villas.find((v) => v.id === selectedVillaId)?.name,
-        },
-      });
+      const { clientSecret } = res as any;
+      if(!clientSecret){
+        alert('Payment initialization failed.');
+        return;
+      }
+      const stripe = await getStripe();
+      if(!stripe){ alert('Stripe failed to load'); return; }
+      // Render Elements inline in a modal-like section
+      setShowPayment(true);
+      setPaymentOptions({clientSecret, appearance:{theme:'flat'}});
     } catch (error: any) {
       alert(error.response?.data?.message || "Reservation failed.");
     }
   };
 
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentOptions, setPaymentOptions] = useState<any>(null);
+
   return (
-    <div className="max-w-2xl mx-auto bg-white p-8 rounded shadow mt-6">
+    <div className="max-w-2xl mx-auto bg-white dark:bg-neutral-800 p-8 rounded shadow-soft mt-6">
       <h2 className="text-2xl font-semibold mb-6">Book a Villa</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -211,13 +259,16 @@ const ReservationPage: React.FC = () => {
           </div>
         )}
 
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Book Now
-        </button>
+        <button type="submit" className="bg-accent-600 text-white px-4 py-2 rounded hover:bg-accent-600/90">Continue to Payment</button>
       </form>
+      {showPayment && paymentOptions?.clientSecret && (
+        <div className="mt-8 border-t pt-6">
+          <h3 className="text-xl font-semibold mb-4">Payment</h3>
+          <Elements stripe={stripePromise} options={paymentOptions}>
+            <CheckoutForm onSuccess={() => navigate("/thankyou", { state: { reservationCode: 'Pending via webhook', feeAmount: totalCost * 0.2, totalNights, guestName: form.guestName } })} />
+          </Elements>
+        </div>
+      )}
     </div>
   );
 };

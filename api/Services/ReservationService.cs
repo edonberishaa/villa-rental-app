@@ -32,6 +32,12 @@ namespace api.Services
 
             return reservation == null ? null : _mapper.Map<ReservationDTO>(reservation);
         } 
+        public async Task<ReservationDTO?> GetReservationByCodeAsync(string reservationCode)
+        {
+            var reservation = await _context.Reservations.Include(r=>r.Villa)
+                .FirstOrDefaultAsync(r => r.ReservationCode == reservationCode);
+            return reservation == null ? null : _mapper.Map<ReservationDTO>(reservation);
+        }
 
         public async Task<bool> ConfirmReservationAsync(int reservationId)
         {
@@ -47,21 +53,34 @@ namespace api.Services
             return true;
 
         }
+        public async Task<bool> ConfirmReservationByCodeAsync(string reservationCode)
+        {
+            var reservation = await _context.Reservations.FirstOrDefaultAsync(r => r.ReservationCode == reservationCode);
+            if (reservation == null || reservation.Status == ReservationStatus.Confirmed)
+            {
+                return false;
+            }
+            reservation.Status = ReservationStatus.Confirmed;
+            await _context.SaveChangesAsync();
+            return true;
+        }
         public async Task<bool> IsVillaAvailableAsync(int villaId, DateTime start, DateTime end)
         {
-            if (start > end)
-                throw new ArgumentException("Start date cannot be after end date");
+            start = start.Date;
+            end = end.Date;
+            if (end <= start)
+                throw new ArgumentException("End date must be after start date");
 
             bool isBlocked = await _context.BlockedDates
                 .AnyAsync(b => b.VillaId == villaId &&
-                               b.StartDate <= end &&
-                               start <= b.EndDate);
+                               b.StartDate < end &&
+                               start < b.EndDate);
 
             bool hasReservation = await _context.Reservations
                 .AnyAsync(r => r.VillaId == villaId &&
                                r.Status != ReservationStatus.Cancelled &&
-                               r.StartDate <= end &&
-                               start <= r.EndDate);
+                               r.StartDate < end &&
+                               start < r.EndDate);
 
             return !isBlocked && !hasReservation;
         }
@@ -76,8 +95,12 @@ namespace api.Services
             if (!available)
                 throw new InvalidOperationException("Villa is not available for the selected dates.");
 
-            int nights = (request.EndDate - request.StartDate).Days + 1;
-            decimal fee = villa.PricePerNight * 0.20m; // 20% upfront
+            var start = request.StartDate.Date;
+            var end = request.EndDate.Date;
+            int nights = (end - start).Days; // end-exclusive
+            if (nights <= 0) throw new InvalidOperationException("End date must be after start date.");
+            decimal total = villa.PricePerNight * nights;
+            decimal fee = Math.Round(total * 0.20m, 2, MidpointRounding.AwayFromZero); // 20% upfront
 
             var reservation = new Reservation
             {
@@ -86,8 +109,8 @@ namespace api.Services
                 GuestPhone = request.GuestPhone,
                 GuestEmail = request.GuestEmail,
                 GuestsCount = request.GuestsCount,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate,
+                StartDate = start,
+                EndDate = end,
                 ReservationFeeAmount = fee,
                 ReservationCode = $"VR-{Guid.NewGuid().ToString().Substring(0, 8).ToUpper()}",
                 Status = ReservationStatus.Pending,

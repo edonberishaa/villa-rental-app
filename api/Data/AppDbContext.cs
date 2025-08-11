@@ -1,9 +1,10 @@
 ﻿using api.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<AppUser>
     {
         public AppDbContext(DbContextOptions<AppDbContext> opts): base(opts)
         {}
@@ -11,6 +12,8 @@ namespace api.Data
         public DbSet<Villa> Villas => Set<Villa>();
         public DbSet<BlockedDate> BlockedDates => Set<BlockedDate>();
         public DbSet<Reservation> Reservations => Set<Reservation>();
+        public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<PropertySubmission> PropertySubmissions => Set<PropertySubmission>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
