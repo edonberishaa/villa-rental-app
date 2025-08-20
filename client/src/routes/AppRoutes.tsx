@@ -12,6 +12,7 @@ import AdminDashboard from "../pages/AdminDashboard";
 import AdminReservations from "../pages/AdminReservations";
 import SubmitProperty from "../pages/SubmitProperty";
 import AdminSubmissions from "../pages/AdminSubmissions";
+import AdminOwnerRequests from "../pages/AdminOwnerRequests";
 import OwnerDashboard from "../pages/OwnerDashboard";
 import { AuthProvider } from "../context/AuthContext";
 import { useAuth } from "../context/AuthContext";
@@ -50,6 +51,7 @@ const AppRoutes = () => {
             <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="/admin/reservations" element={<RequireAdmin><AdminReservations /></RequireAdmin>} />
             <Route path="/admin/submissions" element={<RequireAdmin><AdminSubmissions /></RequireAdmin>} />
+            <Route path="/admin/owner-requests" element={<RequireAdmin><AdminOwnerRequests /></RequireAdmin>} />
           </Routes>
         </Layout>
       </AuthProvider>

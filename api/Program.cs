@@ -34,27 +34,86 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddIdentityApiEndpoints<AppUser>()
+builder.Services.AddIdentityApiEndpoints<AppUser>(
+    options =>
+    {
+        options.Password.RequireDigit = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequiredLength = 8;
+        options.Password.RequireLowercase = true;
+
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(60);
+        options.Lockout.AllowedForNewUsers = true;
+
+        options.User.RequireUniqueEmail = true;
+    })
     .AddRoles<IdentityRole>()
-    .AddEntityFrameworkStores<AppDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
+})
+.AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateIssuerSigningKey = true,
+        ValidateLifetime = true,
+
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+
+        RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+        NameClaimType = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            System.Console.WriteLine("auth failed for: " + context.Exception.Message);
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            var claims = context.Principal.Claims.Select(c => new { c.Type, c.Value });
+            System.Console.WriteLine("Claims: " + System.Text.Json.JsonSerializer.Serialize(claims));
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            System.Console.WriteLine("Onchallenge trigered: " + context.ErrorDescription);
+            return Task.CompletedTask;
+        }
+
     };
 });
 
+builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
@@ -83,6 +142,29 @@ builder.Services.AddSwaggerGen(options =>
             Url = new Uri("https://edonnberisha.netlify.app")
         }
     });
+
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter 'Bearer' [space] and then your token in the text input below.\n\nExample: \"Bearer abcdef1234567890\""
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference{
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+        },
+        Array.Empty<string>()
+    }
+    });
 });
 
 
@@ -104,7 +186,7 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
-    string[] roles = new[] { "Admin", "Customer" };
+    string[] roles = new[] { "Admin", "Customer", "Owner" };
     foreach (var role in roles)
     {
         var exists = roleManager.RoleExistsAsync(role).GetAwaiter().GetResult();
@@ -135,49 +217,27 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    if (!db.Villas.Any())
+    // Configure the HTTP request pipeline.
+    if (app.Environment.IsDevelopment())
     {
-        db.Villas.Add(new Villa
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
         {
-            Name = "Villa Rugova Escape",
-            Region = "Rugova",
-            Description = "Cozy mountain villa with fireplace.",
-            PricePerNight = 120.00m,
-            ImageUrlsJson = "[\"/images/villa1.jpg\",\"/images/villa2.jpg\"]"
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Villa Rental API v1");
+            options.RoutePrefix = string.Empty;
         });
-
-        db.Villas.Add(new Villa
+        app.MapOpenApi();
+    }
+    else
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
         {
-            Name = "Snowy Brezovica Chalet",
-            Region = "Brezovica",
-            Description = "Perfect for winter getaways.",
-            PricePerNight = 150.00m,
-            ImageUrlsJson = "[\"/images/villa3.jpg\"]"
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Villa Rental API v1");
+            options.RoutePrefix = "swagger";
         });
-        db.SaveChanges();
     }
 }
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Villa Rental API v1");
-        options.RoutePrefix = string.Empty;
-    });
-    app.MapOpenApi();
-}
-else
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Villa Rental API v1");
-        options.RoutePrefix = "swagger";
-    });
-}
-
 
 app.MapControllers();
 

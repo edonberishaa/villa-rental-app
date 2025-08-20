@@ -13,7 +13,8 @@ namespace api.Data
         public DbSet<BlockedDate> BlockedDates => Set<BlockedDate>();
         public DbSet<Reservation> Reservations => Set<Reservation>();
         public DbSet<Review> Reviews => Set<Review>();
-        public DbSet<PropertySubmission> PropertySubmissions => Set<PropertySubmission>();
+    public DbSet<PropertySubmission> PropertySubmissions => Set<PropertySubmission>();
+    public DbSet<OwnerRequest> OwnerRequests => Set<OwnerRequest>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

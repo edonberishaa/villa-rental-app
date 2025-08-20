@@ -22,6 +22,8 @@ namespace api.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName ?? user.Email ?? ""),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email ?? "")
+
+
             };
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
