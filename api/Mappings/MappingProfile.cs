@@ -10,6 +10,9 @@ namespace api.Mappings
         {
             CreateMap<Reservation, ReservationDTO>().ReverseMap();
             CreateMap<Reservation, ReservationRequestDTO>().ReverseMap();
+            CreateMap<Reservation, ReservationListDTO>()
+    .ForMember(dest => dest.VillaName, opt => opt.MapFrom(src => src.Villa.Name));
+
         }
     }
 }

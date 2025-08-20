@@ -17,7 +17,6 @@ namespace api.Controllers
         private readonly AppDbContext _context;
         private readonly UserManager<AppUser> _userManager;
         public OwnerController(AppDbContext context, UserManager<AppUser> userManager) { _context = context; _userManager = userManager; }
-        // Endpoint for normal users to request owner access
         [HttpGet("whoami")]
 
 public IActionResult WhoAmI()

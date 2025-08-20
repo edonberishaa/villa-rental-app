@@ -44,25 +44,34 @@ const AdminOwnerRequests: React.FC = () => {
               <th className="p-2">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {requests.map(r => (
-              <tr key={r.Id} className="border-t">
-                <td className="p-2">{r.User?.email || r.User?.Email}</td>
-                <td className="p-2">{new Date(r.RequestedAt).toLocaleString()}</td>
-                <td className="p-2">
-                  {r.Approved === true ? <span className="text-green-600">Approved</span> :
-                   r.Approved === false ? <span className="text-red-600">Refused</span> :
-                   <span className="text-yellow-600">Pending</span>}
-                </td>
-                <td className="p-2">
-                  {r.Approved == null && <>
-                    <button onClick={() => handleAction(r.Id, 'approve')} className="px-2 py-1 bg-green-500 text-white rounded mr-2">Approve</button>
-                    <button onClick={() => handleAction(r.Id, 'refuse')} className="px-2 py-1 bg-red-500 text-white rounded">Refuse</button>
-                  </>}
-                </td>
-              </tr>
-            ))}
-          </tbody>
+<tbody>
+  {requests.map(r => (
+    <tr key={r.id} className="border-t">
+      <td className="p-2">{r.user?.fullName || r.user?.email}</td>
+      <td className="p-2">{new Date(r.requestedAt).toLocaleString()}</td>
+      <td className="p-2">
+        {r.approved === true ? <span className="text-green-600">Approved</span> :
+         r.approved === false ? <span className="text-red-600">Refused</span> :
+         <span className="text-yellow-600">Pending</span>}
+      </td>
+      <td className="p-2">
+        {r.approved == null && <>
+          <button
+            onClick={() => handleAction(r.id, 'approve')}
+            className="px-2 py-1 bg-green-500 text-white rounded mr-2">
+            Approve
+          </button>
+          <button
+            onClick={() => handleAction(r.id, 'refuse')}
+            className="px-2 py-1 bg-red-500 text-white rounded">
+            Refuse
+          </button>
+        </>}
+      </td>
+    </tr>
+  ))}
+</tbody>
+
         </table>
       )}
     </div>

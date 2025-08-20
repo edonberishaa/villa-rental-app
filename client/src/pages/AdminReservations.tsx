@@ -4,7 +4,7 @@ import api from '../services/api';
 interface ReservationRow {
   id: number;
   reservationCode: string;
-  villa?: { name: string };
+  villaName: string;
   startDate: string;
   endDate: string;
   guestName: string;
@@ -25,7 +25,7 @@ const AdminReservations: React.FC = () => {
           {rows.map(r => (
             <tr key={r.id} className="border-t border-neutral-200 dark:border-neutral-800">
               <td>{r.reservationCode}</td>
-              <td>{r.villa?.name}</td>
+              <td>{r.villaName}</td>
               <td>{new Date(r.startDate).toLocaleDateString()} - {new Date(r.endDate).toLocaleDateString()}</td>
               <td>{r.guestName}</td>
               <td>{r.status}</td>

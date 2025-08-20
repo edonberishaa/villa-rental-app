@@ -17,26 +17,26 @@ namespace api.Services
             _context = context;
             _mapper = mapper;
         }
-        public async Task<List<ReservationDTO>> GetAllReservationsAsync()
+        public async Task<List<ReservationListDTO>> GetAllReservationsAsync()
         {
             var reservations = await _context.Reservations
                 .Include(r => r.Villa)
                 .ToListAsync();
-            return _mapper.Map<List<ReservationDTO>>(reservations);
+            return _mapper.Map<List<ReservationListDTO>>(reservations);
         }
-        public async Task<ReservationDTO?> GetReservationByIdAsync(int id)
+        public async Task<ReservationListDTO?> GetReservationByIdAsync(int id)
         {
             var reservation = await _context.Reservations
                 .Include(r => r.Villa)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
-            return reservation == null ? null : _mapper.Map<ReservationDTO>(reservation);
+            return reservation == null ? null : _mapper.Map<ReservationListDTO>(reservation);
         } 
-        public async Task<ReservationDTO?> GetReservationByCodeAsync(string reservationCode)
+        public async Task<ReservationListDTO?> GetReservationByCodeAsync(string reservationCode)
         {
             var reservation = await _context.Reservations.Include(r=>r.Villa)
                 .FirstOrDefaultAsync(r => r.ReservationCode == reservationCode);
-            return reservation == null ? null : _mapper.Map<ReservationDTO>(reservation);
+            return reservation == null ? null : _mapper.Map<ReservationListDTO>(reservation);
         }
 
         public async Task<bool> ConfirmReservationAsync(int reservationId)
