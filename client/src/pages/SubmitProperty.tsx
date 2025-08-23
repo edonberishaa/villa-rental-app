@@ -14,7 +14,7 @@ const SubmitProperty: React.FC = () => {
   const [address, setAddress] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
-  // const [files, setFiles] = useState<FileList | null>(null);
+  const [files, setFiles] = useState<FileList | null>(null);
 
   const toggleAmenity = (a: string) => setAmenities(prev => prev.includes(a) ? prev.filter(x=>x!==a) : [...prev,a]);
 
@@ -22,16 +22,23 @@ const SubmitProperty: React.FC = () => {
     e.preventDefault();
     try {
       // First create submission
-      await api.post('/submissions', {
+      const res = await api.post('/submissions', {
         ownerEmail: JSON.parse(localStorage.getItem('user') || '{}')?.email || 'unknown@owner',
         name, region, description, pricePerNight: price,
         imageUrlsJson: '[]', amenitiesJson: JSON.stringify(amenities), address, latitude: lat? Number(lat): null, longitude: lng? Number(lng): null
       });
-      // Upload images similar to villas upload to reuse files endpoint: store paths into submission for admin view (optional: a new endpoint); for simplicity, attach files to a temp villa after approval. Here we skip immediate upload and let admin request images.
+      const submission = res.data;
+      // Upload images if any
+      if (files && submission.id) {
+        const form = new FormData();
+        Array.from(files).forEach(f => form.append('files', f));
+        await api.post(`/submissions/${submission.id}/images`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      }
       push('Submitted! We will review your property shortly.', 'success');
-      setName(''); setRegion(''); setDescription(''); setPrice(0); setAmenities([]); setAddress(''); setLat(''); setLng('');
-    } catch (e) {
-      // handled by interceptor; no-op
+      setName(''); setRegion(''); setDescription(''); setPrice(0); setAmenities([]); setAddress(''); setLat(''); setLng(''); setFiles(null);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || 'Submission failed.';
+      push(msg, 'error');
     }
   };
 
@@ -58,7 +65,7 @@ const SubmitProperty: React.FC = () => {
           <input className="input" placeholder="Latitude" value={lat} onChange={e=>setLat(e.target.value)} />
           <input className="input" placeholder="Longitude" value={lng} onChange={e=>setLng(e.target.value)} />
         </div>
-        {/* Optional: allow attaching preview images in a follow-up iteration */}
+  <input className="input" type="file" multiple onChange={e=>setFiles(e.target.files)} />
         <button className="bg-accent-600 text-white px-4 py-2 rounded">Submit</button>
       </form>
     </div>

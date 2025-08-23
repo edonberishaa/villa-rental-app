@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useToast } from "../components/Toast";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Villa } from "../types/Villa";
 import { getVillaById } from "../services/villaService";
@@ -14,10 +15,12 @@ const VillaDetailsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  const { push } = useToast();
   useEffect(() => {
     const fetchVilla = async () => {
       if (!villaId) {
         setError("Villa ID is missing.");
+        push("Villa ID is missing.", "error");
         setLoading(false);
         return;
       }
@@ -27,6 +30,7 @@ const VillaDetailsPage: React.FC = () => {
         setVilla(data);
       } catch (err) {
         setError("Villa not found.");
+        push("Villa not found.", "error");
       } finally {
         setLoading(false);
       }

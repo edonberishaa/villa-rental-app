@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { getAllVillas } from '../services/villaService';
 import VillaCard from '../components/VillaCard';
+import { useToast } from '../components/Toast';
 
 export default function Home() {
   const [villas, setVillas] = useState<Villa[]>([]);
@@ -13,6 +14,7 @@ export default function Home() {
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [sort, setSort] = useState('');
 
+  const { push } = useToast();
   useEffect(() => {
     getAllVillas()
       .then((data) => {
@@ -20,7 +22,7 @@ export default function Home() {
         setLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching villas:", error);
+        push('Failed to load villas', 'error');
         setLoading(false);
       });
   }, []);

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../components/Toast';
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -8,9 +9,15 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { push } = useToast();
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true);
-    try { await login({ email, password }); nav('/'); } finally { setLoading(false); }
+    try {
+      await login({ email, password });
+      nav('/');
+    } catch (err: any) {
+      push(err?.response?.data?.message || 'Login failed.', 'error');
+    } finally { setLoading(false); }
   };
   return (
     <div className="max-w-md mx-auto card p-6">

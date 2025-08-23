@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { getAllVillas, getVillaById } from "../services/villaService";
 import type { Villa } from "../types/Villa";
 import { createReservation } from "../services/reservationService";
+import { useToast } from "../components/Toast";
 import { differenceInCalendarDays } from "date-fns";
 import { useNavigate, useParams } from "react-router-dom";
 import {loadStripe} from '@stripe/stripe-js';
@@ -139,10 +140,11 @@ const ReservationPage: React.FC = () => {
     }));
   };
 
+  const { push } = useToast();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVillaId) {
-      alert("Please select a villa.");
+      push("Please select a villa.", "error");
       return;
     }
 
@@ -155,16 +157,17 @@ const ReservationPage: React.FC = () => {
       const res = await createReservation(payload);
       const { clientSecret } = res as any;
       if(!clientSecret){
-        alert('Payment initialization failed.');
+        push('Payment initialization failed.', 'error');
         return;
       }
       const stripe = await getStripe();
-      if(!stripe){ alert('Stripe failed to load'); return; }
+      if(!stripe){ push('Stripe failed to load', 'error'); return; }
       // Render Elements inline in a modal-like section
       setShowPayment(true);
       setPaymentOptions({clientSecret, appearance:{theme:'flat'}});
     } catch (error: any) {
-      alert(error.response?.data?.message || "Reservation failed.");
+      const msg = error.response?.data?.message || "Reservation failed.";
+      push(msg, 'error');
     }
   };
 

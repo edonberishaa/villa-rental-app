@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { getAllVillas, createVilla, updateVilla, deleteVilla } from '../services/villaService';
 import type { Villa } from '../types/Villa';
 import api from '../services/api';
+import { useToast } from '../components/Toast';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -11,29 +12,38 @@ const AdminDashboard: React.FC = () => {
   const [selected, setSelected] = useState<Villa | null>(null);
   const [files, setFiles] = useState<FileList | null>(null);
 
-  useEffect(() => { getAllVillas().then(v => { setVillas(v); setLoading(false); }); }, []);
+  const { push } = useToast();
+  useEffect(() => {
+    getAllVillas()
+      .then(v => { setVillas(v); setLoading(false); })
+      .catch(() => { push('Failed to load villas', 'error'); setLoading(false); });
+  }, []);
 
   const save = async () => {
     if (!selected) return;
-    let result: Villa;
-    if (selected.id) result = await updateVilla(selected.id, selected);
-    else result = await createVilla(selected);
+    try {
+      let result: Villa;
+      if (selected.id) result = await updateVilla(selected.id, selected);
+      else result = await createVilla(selected);
 
-    let updated: Villa = result;
-    if (files && result.id) {
-      const form = new FormData();
-      Array.from(files).forEach(f => form.append('files', f));
-      const uploadRes = await api.post(`/villas/${result.id}/images`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      updated = uploadRes.data as Villa;
+      let updated: Villa = result;
+      if (files && result.id) {
+        const form = new FormData();
+        Array.from(files).forEach(f => form.append('files', f));
+        const uploadRes = await api.post(`/villas/${result.id}/images`, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+        updated = uploadRes.data as Villa;
+      }
+
+      setVillas(prev => {
+        const ix = prev.findIndex(v => v.id === updated.id);
+        if (ix >= 0) { const copy = [...prev]; copy[ix] = updated; return copy; }
+        return [updated, ...prev];
+      });
+
+      setSelected(null); setFiles(null);
+    } catch (err: any) {
+      push(err?.response?.data?.message || 'Failed to save villa.', 'error');
     }
-
-    setVillas(prev => {
-      const ix = prev.findIndex(v => v.id === updated.id);
-      if (ix >= 0) { const copy = [...prev]; copy[ix] = updated; return copy; }
-      return [updated, ...prev];
-    });
-
-    setSelected(null); setFiles(null);
   };
 
   const startNew = () => setSelected({ id: 0, name: '', region: '', description: '', pricePerNight: 0, imageUrlsJson: '[]' } as any);
