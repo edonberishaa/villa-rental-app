@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { getAllVillas, getVillaById } from "../services/villaService";
 import type { Villa } from "../types/Villa";
 import { createReservation } from "../services/reservationService";
@@ -68,14 +69,23 @@ const ReservationPage: React.FC = () => {
   const [selectedVillaId, setSelectedVillaId] = useState<number | null>(null);
   const [villaPrice, setVillaPrice] = useState<number>(0);
 
+  const { user } = useAuth();
   const [form, setForm] = useState<Omit<ReservationPayload, "villaId">>({
-    guestName: "",
+    guestName: user?.fullName || "",
     guestPhone: "",
-    guestEmail: "",
+    guestEmail: user?.email || "",
     guestsCount: 1,
     startDate: "",
     endDate: "",
   });
+  // Update form fields if user changes (e.g., login/logout)
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      guestName: user?.fullName || "",
+      guestEmail: user?.email || "",
+    }));
+  }, [user]);
 
   const [totalNights, setTotalNights] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
@@ -203,6 +213,7 @@ const ReservationPage: React.FC = () => {
           value={form.guestName}
           required
           className="w-full border p-2"
+          readOnly={!!user}
         />
         <input
           type="text"
@@ -220,6 +231,7 @@ const ReservationPage: React.FC = () => {
           onChange={handleChange}
           value={form.guestEmail}
           className="w-full border p-2"
+          readOnly={!!user}
         />
         <input
           type="number"

@@ -29,7 +29,7 @@ namespace api.Controllers
 
         // GET: api/Villas
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Villa>>> GetVillas(
+        public async Task<ActionResult<IEnumerable<object>>> GetVillas(
             [FromQuery] string? q,
             [FromQuery] string? region,
             [FromQuery] decimal? minPrice,
@@ -62,20 +62,44 @@ namespace api.Controllers
                 query = query.Where(v => v.PricePerNight <= maxPrice.Value);
             }
 
-            switch (sort)
+            // Promoted villas first, then by sort
+            if (sort == "priceAsc")
             {
-                case "priceAsc":
-                    query = query.OrderBy(v => v.PricePerNight);
-                    break;
-                case "priceDesc":
-                    query = query.OrderByDescending(v => v.PricePerNight);
-                    break;
-                case "newest":
-                    query = query.OrderByDescending(v => v.CreatedAt);
-                    break;
+                query = query.OrderByDescending(v => v.PromotedUntil != null && v.PromotedUntil > DateTime.UtcNow)
+                    .ThenBy(v => v.PricePerNight);
+            }
+            else if (sort == "priceDesc")
+            {
+                query = query.OrderByDescending(v => v.PromotedUntil != null && v.PromotedUntil > DateTime.UtcNow)
+                    .ThenByDescending(v => v.PricePerNight);
+            }
+            else if (sort == "newest")
+            {
+                query = query.OrderByDescending(v => v.PromotedUntil != null && v.PromotedUntil > DateTime.UtcNow)
+                    .ThenByDescending(v => v.CreatedAt);
+            }
+            else
+            {
+                query = query.OrderByDescending(v => v.PromotedUntil != null && v.PromotedUntil > DateTime.UtcNow)
+                    .ThenBy(v => v.Name);
             }
 
-            return await query.ToListAsync();
+            var villas = await query.ToListAsync();
+            // Project to include isPromoted
+            var result = villas.Select(v => new {
+                v.Id,
+                v.Name,
+                v.Region,
+                v.Description,
+                v.PricePerNight,
+                v.ImageUrlsJson,
+                v.AmenitiesJson,
+                v.Address,
+                v.Latitude,
+                v.Longitude,
+                isPromoted = v.PromotedUntil != null && v.PromotedUntil > DateTime.UtcNow
+            });
+            return Ok(result);
         }
 
         // GET: api/Villas/5

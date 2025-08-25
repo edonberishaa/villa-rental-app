@@ -5,14 +5,91 @@ import type { Villa } from '../types/Villa';
 import api from '../services/api';
 import { useToast } from '../components/Toast';
 
+// Import admin panels
+import AdminOwnerRequests from './AdminOwnerRequests';
+import AdminSubmissions from './AdminSubmissions';
+import AdminReservations from './AdminReservations';
+
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState<any>({});
+  const [tab, setTab] = useState<'villas'|'ownerRequests'|'submissions'|'reservations'>('villas');
+
+  // Stats loading
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const [villas, ownerReq, submissions, reservations] = await Promise.all([
+          api.get('/villas'),
+          api.get('/owner/requests'),
+          api.get('/submissions'),
+          api.get('/reservation'),
+        ]);
+        setStats({
+          villas: villas.data.length,
+          ownerRequests: ownerReq.data.length,
+          submissions: submissions.data.length,
+          reservations: reservations.data.length,
+        });
+      } catch {}
+    }
+    fetchStats();
+  }, []);
+
+  if (!user) return <div className="p-6">Sign in as admin.</div>;
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+      </div>
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="bg-white dark:bg-neutral-800 rounded shadow p-4 text-center">
+          <div className="text-lg font-bold">{stats.villas ?? '-'}</div>
+          <div className="text-xs text-neutral-500">Villas</div>
+        </div>
+        <div className="bg-white dark:bg-neutral-800 rounded shadow p-4 text-center">
+          <div className="text-lg font-bold">{stats.ownerRequests ?? '-'}</div>
+          <div className="text-xs text-neutral-500">Owner Requests</div>
+        </div>
+        <div className="bg-white dark:bg-neutral-800 rounded shadow p-4 text-center">
+          <div className="text-lg font-bold">{stats.submissions ?? '-'}</div>
+          <div className="text-xs text-neutral-500">Submissions</div>
+        </div>
+        <div className="bg-white dark:bg-neutral-800 rounded shadow p-4 text-center">
+          <div className="text-lg font-bold">{stats.reservations ?? '-'}</div>
+          <div className="text-xs text-neutral-500">Reservations</div>
+        </div>
+      </div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4">
+        <button className={`px-4 py-2 rounded ${tab==='villas' ? 'bg-accent-600 text-white' : 'bg-neutral-200 dark:bg-neutral-700'}`} onClick={()=>setTab('villas')}>Villas</button>
+        <button className={`px-4 py-2 rounded ${tab==='ownerRequests' ? 'bg-accent-600 text-white' : 'bg-neutral-200 dark:bg-neutral-700'}`} onClick={()=>setTab('ownerRequests')}>Owner Requests</button>
+        <button className={`px-4 py-2 rounded ${tab==='submissions' ? 'bg-accent-600 text-white' : 'bg-neutral-200 dark:bg-neutral-700'}`} onClick={()=>setTab('submissions')}>Submissions</button>
+        <button className={`px-4 py-2 rounded ${tab==='reservations' ? 'bg-accent-600 text-white' : 'bg-neutral-200 dark:bg-neutral-700'}`} onClick={()=>setTab('reservations')}>Reservations</button>
+      </div>
+      {/* Tab content */}
+      <div>
+        {tab === 'villas' && (
+          // ...existing code for villa management (copy from previous AdminDashboard)
+          <VillaAdminPanel />
+        )}
+        {tab === 'ownerRequests' && <AdminOwnerRequests />}
+        {tab === 'submissions' && <AdminSubmissions />}
+        {tab === 'reservations' && <AdminReservations />}
+      </div>
+    </div>
+  );
+};
+
+// Extracted villa management panel for reuse in dashboard
+const VillaAdminPanel: React.FC = () => {
   const [villas, setVillas] = useState<Villa[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Villa | null>(null);
   const [files, setFiles] = useState<FileList | null>(null);
-
   const { push } = useToast();
+
   useEffect(() => {
     getAllVillas()
       .then(v => { setVillas(v); setLoading(false); })
@@ -48,11 +125,10 @@ const AdminDashboard: React.FC = () => {
 
   const startNew = () => setSelected({ id: 0, name: '', region: '', description: '', pricePerNight: 0, imageUrlsJson: '[]' } as any);
 
-  if (!user) return <div className="p-6">Sign in as admin.</div>;
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Admin dashboard</h1>
+        <h2 className="text-xl font-semibold">Villas</h2>
         <button className="bg-accent-600 text-white px-4 py-2 rounded" onClick={startNew}>New villa</button>
       </div>
       <div className="grid md:grid-cols-3 gap-4">

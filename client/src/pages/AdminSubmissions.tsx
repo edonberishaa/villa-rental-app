@@ -18,8 +18,14 @@ const AdminSubmissions: React.FC = () => {
   useEffect(() => { load(); }, [filter]);
 
   const doApprove = async (id: number) => {
+    try{
     await approveSubmission(id);
     push('Submission approved and villa created.', 'success');
+    }
+    catch(err : any){
+      const msg = err?.response?.data?.message || "Failed to approve villa. Listing fee not paid.";
+      push(msg,"error");
+    }
     load();
   };
   const doReject = async (id: number) => {

@@ -17,7 +17,9 @@ namespace api.Models
         public string OwnerEmail { get; set; } = string.Empty;
         [Required]
         public string Name { get; set; } = string.Empty;
-        public string Region { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    [Required]
+    public string PhoneNumber { get; set; } = string.Empty;
         public string? Description { get; set; }
         public decimal PricePerNight { get; set; }
         public string ImageUrlsJson { get; set; } = "[]";
@@ -26,7 +28,8 @@ namespace api.Models
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public SubmissionStatus Status { get; set; } = SubmissionStatus.Pending;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool Paid { get; set; } = false;
     }
 }
 

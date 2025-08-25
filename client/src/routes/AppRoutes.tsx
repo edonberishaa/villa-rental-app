@@ -9,11 +9,9 @@ import Layout from "../components/Layout";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 import AdminDashboard from "../pages/AdminDashboard";
-import AdminReservations from "../pages/AdminReservations";
 import SubmitProperty from "../pages/SubmitProperty";
-import AdminSubmissions from "../pages/AdminSubmissions";
-import AdminOwnerRequests from "../pages/AdminOwnerRequests";
 import OwnerDashboard from "../pages/OwnerDashboard";
+import OwnerVillaDetailsPage from "../pages/OwnerVillaDetailsPage";
 import { AuthProvider } from "../context/AuthContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -49,9 +47,7 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
-            <Route path="/admin/reservations" element={<RequireAdmin><AdminReservations /></RequireAdmin>} />
-            <Route path="/admin/submissions" element={<RequireAdmin><AdminSubmissions /></RequireAdmin>} />
-            <Route path="/admin/owner-requests" element={<RequireAdmin><AdminOwnerRequests /></RequireAdmin>} />
+            <Route path="/owner/villa/:villaId" element={<RequireAuth><OwnerVillaDetailsPage /></RequireAuth>} />
           </Routes>
         </Layout>
       </AuthProvider>

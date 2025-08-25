@@ -1,4 +1,5 @@
-﻿using api.DTOs;
+﻿
+using api.DTOs;
 using api.Services;
 using api.Services.Interfaces;
 using AutoMapper;
@@ -29,6 +30,17 @@ namespace api.Controllers
             _emailService = emailService;
             _dbContext = dbContext;
             _logger = logger;
+        }
+
+        // Get all reserved date ranges for a villa
+        [HttpGet("villa/{villaId}/dates")]
+        public async Task<IActionResult> GetReservedDatesForVilla(int villaId)
+        {
+            var reservations = await _dbContext.Reservations
+                .Where(r => r.VillaId == villaId && r.EndDate >= DateTime.UtcNow)
+                .Select(r => new { r.StartDate, r.EndDate })
+                .ToListAsync();
+            return Ok(reservations);
         }
 
         [Authorize]

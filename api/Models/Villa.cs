@@ -9,6 +9,8 @@ public class Villa
     public string Name { get; set; } = null!;
     [Required]
     public string Region { get; set; } = null!;
+    [Required]
+    public string PhoneNumber { get; set; } = null!;
     public string? Description { get; set; }
     [Column(TypeName = "decimal(10,2)")]
     public decimal PricePerNight { get; set; }

@@ -39,6 +39,7 @@ namespace api.Controllers
         {
             var s = await _context.PropertySubmissions.FindAsync(id);
             if (s == null) return NotFound();
+            if (!s.Paid) return BadRequest("Listing fee not paid");
             s.Status = SubmissionStatus.Approved;
             // create villa from submission
             var villa = new Villa {

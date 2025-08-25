@@ -17,3 +17,13 @@ export const createReservation = async (reservation: Reservation): Promise<Creat
   const response = await api.post(BASE, reservation);
   return response.data
 };
+
+export async function getReservedDatesForVilla(villaId: number) {
+  const res = await api.get(`/reservation/villa/${villaId}/dates`);
+  return res.data as { startDate: string; endDate: string }[];
+}
+
+export async function getReservationsForOwnedVilla(villaId: number) {
+  const res = await api.get(`/owner/properties/${villaId}/reservations`);
+  return res.data;
+}
