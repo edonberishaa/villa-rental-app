@@ -16,6 +16,12 @@ namespace api.Models
         [Required]
         public string AuthorEmail { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // New fields for advanced review system
+        public List<string>? PhotoUrls { get; set; } // URLs to uploaded review photos
+        [MaxLength(2048)]
+        public string? OwnerResponse { get; set; }
+        public bool VerifiedStay { get; set; } = false;
     }
 }
 

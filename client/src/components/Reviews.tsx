@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { createReview, getReviews, type Review } from "../services/reviewService";
+import { createReview, createReviewWithPhotos, getReviews, type Review } from "../services/reviewService";
 import { useAuth } from "../context/AuthContext";
 
 const Reviews: React.FC<{ villaId: number }> = ({ villaId }) => {
@@ -7,6 +7,8 @@ const Reviews: React.FC<{ villaId: number }> = ({ villaId }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
     getReviews(villaId).then(setReviews);
@@ -18,10 +20,16 @@ const Reviews: React.FC<{ villaId: number }> = ({ villaId }) => {
       alert("Please sign in to review");
       return;
     }
-    const r = await createReview(villaId, { rating, comment, authorEmail: user.email });
+    let r: Review;
+    if (images.length > 0) {
+      r = await createReviewWithPhotos(villaId, { rating, comment, authorEmail: user.email, images });
+    } else {
+      r = await createReview(villaId, { rating, comment, authorEmail: user.email });
+    }
     setReviews((prev) => [r, ...prev]);
     setRating(5);
     setComment("");
+    setImages([]);
     alert("Review submitted. Thank you!");
   };
 
@@ -63,6 +71,23 @@ const Reviews: React.FC<{ villaId: number }> = ({ villaId }) => {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
+          <div>
+            <label className="block text-sm font-medium mb-1">Add photos (optional):</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={e => setImages(e.target.files ? Array.from(e.target.files) : [])}
+              className="block w-full text-sm border rounded-md px-2 py-1"
+            />
+            {images.length > 0 && (
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {images.map((img, i) => (
+                  <span key={i} className="inline-block bg-neutral-200 dark:bg-neutral-700 px-2 py-1 rounded text-xs">{img.name}</span>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             className="bg-accent-600 hover:bg-accent-700 text-white font-semibold px-4 py-2 rounded-lg"
           >
@@ -89,6 +114,19 @@ const Reviews: React.FC<{ villaId: number }> = ({ villaId }) => {
             {r.comment && (
               <p className="text-sm text-gray-700 dark:text-neutral-300">{r.comment}</p>
             )}
+            {r.photoUrls && r.photoUrls.length > 0 && (
+              <div className="flex gap-2 mt-2 flex-wrap">
+                {r.photoUrls.map((url, i) => (
+                  <img
+                    key={i}
+                    src={url}
+                    alt="review"
+                    className="w-20 h-20 object-cover rounded cursor-pointer hover:scale-105 transition"
+                    onClick={() => setLightboxUrl(url)}
+                  />
+                ))}
+              </div>
+            )}
             <p className="mt-1 text-xs text-gray-500">
               by {r.authorEmail || "Anonymous"}
             </p>
@@ -98,6 +136,23 @@ const Reviews: React.FC<{ villaId: number }> = ({ villaId }) => {
           <div className="text-sm text-gray-500">No reviews yet. Be the first!</div>
         )}
       </ul>
+    {/* Lightbox modal for enlarged review photo */}
+    {lightboxUrl && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+        onClick={() => setLightboxUrl(null)}
+      >
+        <div className="relative" onClick={e => e.stopPropagation()}>
+          <img src={lightboxUrl} alt="review large" className="max-w-[90vw] max-h-[80vh] rounded-lg shadow-lg" />
+          <button
+            className="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full px-3 py-1 text-black font-bold text-lg"
+            onClick={() => setLightboxUrl(null)}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

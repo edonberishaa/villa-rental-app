@@ -15,6 +15,7 @@ namespace api.Data
         public DbSet<Review> Reviews => Set<Review>();
     public DbSet<PropertySubmission> PropertySubmissions => Set<PropertySubmission>();
     public DbSet<OwnerRequest> OwnerRequests => Set<OwnerRequest>();
+    public DbSet<WishlistItem> WishlistItems => Set<WishlistItem>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -6,5 +6,10 @@ export default defineConfig({
   plugins: [react()],
   build: {
     sourcemap: true,
+  },
+  server: {
+    proxy: {
+      '/images': 'http://localhost:5223'
+    }
   }
-})
+});

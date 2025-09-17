@@ -14,6 +14,7 @@ import OwnerDashboard from "../pages/OwnerDashboard";
 import OwnerVillaDetailsPage from "../pages/OwnerVillaDetailsPage";
 import { AuthProvider } from "../context/AuthContext";
 import { useAuth } from "../context/AuthContext";
+import WishlistPage from "../pages/WishlistPage";
 
 type ElementChild = React.ReactElement | null;
 const RequireAuth: React.FC<{ children: ElementChild }> = ({ children }) => {
@@ -48,6 +49,7 @@ const AppRoutes = () => {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
             <Route path="/owner/villa/:villaId" element={<RequireAuth><OwnerVillaDetailsPage /></RequireAuth>} />
+            <Route path="/wishlist" element={<WishlistPage />} />
           </Routes>
         </Layout>
       </AuthProvider>
