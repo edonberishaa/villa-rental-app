@@ -1,44 +1,65 @@
-Villa Rental App
-A full-stack villa rental platform built with ASP.NET Core (backend) and React + Vite (frontend).
-This project enables users to browse, book, and review premium villas, with advanced features for owners and admins.
+# 🏡 Villa Rental App  
 
-Features
-User Authentication & Roles: Register, login, and secure role-based access (Customer, Owner, Admin).
-Owner Upgrade Requests: Users can request to become owners; admins can approve/refuse requests.
-Villa Listings & Submissions: Owners can list and manage their properties.
-Reservations & Payments: Secure booking and payment integration.
-Advanced Review System: Guests can leave reviews with photos, “verified stay” badges, and owners can respond.
-Wishlist: Users can favorite villas and manage their wishlist.
-Admin Dashboard: Admins can manage villas, reservations, submissions, owner requests, and reviews.
-Responsive UI: Modern, mobile-friendly design with dark mode.
-Static File Serving: Review photos and villa images are served from the backend.
-JWT Authentication: Secure API access for all endpoints.
-Swagger API Docs: Interactive API documentation for backend endpoints.
+A **full-stack villa rental platform** built with **ASP.NET Core (backend)** and **React + Vite (frontend)**.  
+This project allows users to **browse, book, and review premium villas** with advanced features for customers, owners, and admins.  
 
-Getting Started
+---
 
-Backend (.NET API)
+## ✨ Features  
 
-1.Install .NET 9 SDK.
-2.Configure your database connection in appsettings.json.
-3.Run migrations:
+- 🔐 **User Authentication & Roles** – Secure JWT-based login (Customer, Owner, Admin)  
+- 🏠 **Villa Listings & Management** – Owners can list and manage their villas  
+- 📅 **Reservations & Payments** – Secure booking flow with payment integration  
+- 📌 **Owner Upgrade Requests** – Users can request to become owners; admins approve/refuse  
+- ⭐ **Advanced Review System** – Guests leave reviews with photos + verified stay badges; owners can reply  
+- ❤️ **Wishlist** – Users can favorite villas and manage their list  
+- 🛠️ **Admin Dashboard** – Manage villas, reservations, owner requests, and reviews  
+- 🌓 **Responsive UI** – Modern, mobile-friendly design with **Dark Mode**  
+- 🖼️ **Static File Serving** – Review photos & villa images served from backend  
+- 📜 **Swagger API Docs** – Interactive API documentation  
+
+---
+
+## 🛠️ Tech Stack  
+
+**Frontend:** React + Vite, TypeScript, TailwindCSS  
+**Backend:** ASP.NET Core 9 Web API, Entity Framework Core, SQL Server  
+**Authentication:** JWT (JSON Web Tokens)  
+**Other Tools:** Swagger, CORS, REST API, Static File Hosting  
+
+---
+
+⚙️ Development Notes
+
+Configure CORS and static file proxy in vite.config.ts for seamless local development
+
+Use Swagger for API testing & docs (/swagger)
+
+Ensure backend is running before starting frontend
+---
+
+## 🚀 Getting Started  
+
+### 🔹 Backend (ASP.NET Core API)  
+
+```bash
+# 1. Install .NET 9 SDK
+
+# 2. Configure your database connection
+#    → update `appsettings.json`
+
+# 3. Run migrations
 dotnet ef database update
 
-4.Start the API:
-dotnet run
+# 1. Install Node.js (v18+ recommended)
 
-Frontend (React + Vite)
-
-1.Install Node.js (v18+ recommended).
-2.Install dependencies:
+# 2. Install dependencies
 cd client
 npm install
 
-3.Start the frontend:
+# 3. Start the frontend
 npm run dev
 
-4.Access the app at http://localhost:5173.
 
-Development Notes
-Configure CORS and static file proxy in vite.config.ts for seamless local development.
-Use Swagger at /swagger for API testing and documentation.
+# 4. Start the API
+dotnet run
